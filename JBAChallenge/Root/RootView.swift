@@ -10,26 +10,36 @@ import SwiftUI
 struct RootView: View {
     
     @State private var rowLogs: [Int] = Array(0..<10)
+    @State private var add: Bool = false
+    @State private var fileUrl: URL?
     
     var body: some View {
-        NavigationView {
-            VStack {
-                List($rowLogs, id: \.self) { log in
-                    Text("\(log.wrappedValue)")
+        NavigationSplitView(sidebar: {
+            NavigationView {
+                VStack {
+                    List($rowLogs, id: \.self) { log in
+                        Text("\(log.wrappedValue)")
+                    }
+                    Button("Import") {
+                        add = true
+                    }
+                    .padding()
                 }
-                Button("Import") {
-                    showFileChoosePanel()
-                }
-                .padding()
             }
-        }
+        }, detail: {
+            if let fileUrl {
+                Text(fileUrl.absoluteString)
+            } else {
+                Text("import file")
+            }
+        })
+        .sheet(isPresented: $add, content: {
+            FilePickerView(fileUrl: $fileUrl)
+        })
     }
 }
 
 private extension RootView {
-    func showFileChoosePanel() {
-        
-    }
 }
 
 #Preview {
