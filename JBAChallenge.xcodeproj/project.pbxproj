@@ -15,6 +15,7 @@
 		8B33BA932AD82C5200B9E73B /* JBAChallenge.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA912AD82C5200B9E73B /* JBAChallenge.xcdatamodeld */; };
 		8B33BA9B2AD841F300B9E73B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA9A2AD841F300B9E73B /* RootView.swift */; };
 		8B33BA9D2AD8420200B9E73B /* RootViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */; };
+		8B8F8E462AD95E8100851199 /* FilePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B8F8E452AD95E8100851199 /* FilePickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		8B33BA922AD82C5200B9E73B /* JBAChallenge.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = JBAChallenge.xcdatamodel; sourceTree = "<group>"; };
 		8B33BA9A2AD841F300B9E73B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewModel.swift; sourceTree = "<group>"; };
+		8B8F8E452AD95E8100851199 /* FilePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				8B33BA882AD82C5000B9E73B /* ContentView.swift */,
 				8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */,
 				8B33BA8F2AD82C5200B9E73B /* Persistence.swift */,
+				8B8F8E442AD95E6D00851199 /* CommonViews */,
 				8B33BA992AD841E200B9E73B /* Root */,
 				8B33BA912AD82C5200B9E73B /* JBAChallenge.xcdatamodeld */,
 				8B33BA8C2AD82C5200B9E73B /* Preview Content */,
@@ -85,6 +88,14 @@
 				8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */,
 			);
 			path = Root;
+			sourceTree = "<group>";
+		};
+		8B8F8E442AD95E6D00851199 /* CommonViews */ = {
+			isa = PBXGroup;
+			children = (
+				8B8F8E452AD95E8100851199 /* FilePickerView.swift */,
+			);
+			path = CommonViews;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -161,6 +172,7 @@
 				8B33BA932AD82C5200B9E73B /* JBAChallenge.xcdatamodeld in Sources */,
 				8B33BA892AD82C5000B9E73B /* ContentView.swift in Sources */,
 				8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */,
+				8B8F8E462AD95E8100851199 /* FilePickerView.swift in Sources */,
 				8B33BA9D2AD8420200B9E73B /* RootViewModel.swift in Sources */,
 				8B33BA9B2AD841F300B9E73B /* RootView.swift in Sources */,
 			);
@@ -304,6 +316,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -333,6 +346,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

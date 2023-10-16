@@ -7,31 +7,51 @@
 
 import SwiftUI
 
-struct RootView: View {
+struct RootView<ViewModel: RootViewModelProtocol>: View {
     
     @State private var rowLogs: [Int] = Array(0..<10)
+    @State private var add: Bool = false
+    @State private var fileUrl: URL?
+    @ObservedObject private var viewModel: ViewModel
+    
+    init(viewModel: ViewModel) {
+        self.viewModel = viewModel
+    }
     
     var body: some View {
-        NavigationView {
-            VStack {
-                List($rowLogs, id: \.self) { log in
-                    Text("\(log.wrappedValue)")
+        NavigationSplitView(sidebar: {
+            NavigationView {
+                VStack {
+                    List($rowLogs, id: \.self) { log in
+                        Text("\(log.wrappedValue)")
+                    }
+                    Button("Import") {
+                        add = true
+                        fileUrl = nil
+                    }
+                    .padding()
                 }
-                Button("Import") {
-                    showFileChoosePanel()
-                }
-                .padding()
             }
+        }, detail: {
+            if let fileUrl {
+                Text(fileUrl.absoluteString)
+            } else {
+                Text("import file")
+            }
+        })
+        .sheet(isPresented: $add, content: {
+            FilePickerView(fileUrl: $fileUrl)
+        })
+        .onChange(of: fileUrl) { oldValue, newValue in
+            guard let fileUrl else { return }
+            viewModel.readFile(url: fileUrl)
         }
     }
 }
 
 private extension RootView {
-    func showFileChoosePanel() {
-        
-    }
 }
 
 #Preview {
-    RootView()
+    RootView(viewModel: MockRootViewModel())
 }
