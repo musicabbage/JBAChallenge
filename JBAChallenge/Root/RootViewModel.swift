@@ -6,3 +6,25 @@
 //
 
 import Foundation
+
+protocol RootViewModelProtocol: ObservableObject {
+    
+    func readFile(url: URL)
+}
+
+class RootViewModel: RootViewModelProtocol {
+    
+    func readFile(url: URL) {
+        
+        guard freopen(url.path(), "r", stdin) != nil else { return }
+        
+        while let line = readLine() {
+        }
+    }
+}
+
+class MockRootViewModel: RootViewModelProtocol {
+    func readFile(url: URL) {
+        
+    }
+}

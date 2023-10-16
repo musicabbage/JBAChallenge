@@ -7,11 +7,16 @@
 
 import SwiftUI
 
-struct RootView: View {
+struct RootView<ViewModel: RootViewModelProtocol>: View {
     
     @State private var rowLogs: [Int] = Array(0..<10)
     @State private var add: Bool = false
     @State private var fileUrl: URL?
+    @ObservedObject private var viewModel: ViewModel
+    
+    init(viewModel: ViewModel) {
+        self.viewModel = viewModel
+    }
     
     var body: some View {
         NavigationSplitView(sidebar: {
@@ -22,6 +27,7 @@ struct RootView: View {
                     }
                     Button("Import") {
                         add = true
+                        fileUrl = nil
                     }
                     .padding()
                 }
@@ -36,6 +42,10 @@ struct RootView: View {
         .sheet(isPresented: $add, content: {
             FilePickerView(fileUrl: $fileUrl)
         })
+        .onChange(of: fileUrl) { oldValue, newValue in
+            guard let fileUrl else { return }
+            viewModel.readFile(url: fileUrl)
+        }
     }
 }
 
@@ -43,5 +53,5 @@ private extension RootView {
 }
 
 #Preview {
-    RootView()
+    RootView(viewModel: MockRootViewModel())
 }
