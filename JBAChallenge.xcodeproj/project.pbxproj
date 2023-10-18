@@ -17,6 +17,7 @@
 		8B33BA9D2AD8420200B9E73B /* RootViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */; };
 		8B8F8E462AD95E8100851199 /* FilePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B8F8E452AD95E8100851199 /* FilePickerView.swift */; };
 		8B8F8E492AD998BD00851199 /* Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B8F8E482AD998BD00851199 /* Errors.swift */; };
+		8BD2DBE82ADD72AF0015F2EC /* PrecipitationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BD2DBE72ADD72AF0015F2EC /* PrecipitationModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewModel.swift; sourceTree = "<group>"; };
 		8B8F8E452AD95E8100851199 /* FilePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePickerView.swift; sourceTree = "<group>"; };
 		8B8F8E482AD998BD00851199 /* Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errors.swift; sourceTree = "<group>"; };
+		8BD2DBE72ADD72AF0015F2EC /* PrecipitationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrecipitationModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +72,7 @@
 				8B8F8E472AD998B300851199 /* Common */,
 				8B8F8E442AD95E6D00851199 /* CommonViews */,
 				8B33BA992AD841E200B9E73B /* Root */,
+				8BD2DBE62ADD72840015F2EC /* Models */,
 				8B33BA912AD82C5200B9E73B /* JBAChallenge.xcdatamodeld */,
 				8B33BA8C2AD82C5200B9E73B /* Preview Content */,
 			);
@@ -107,6 +110,14 @@
 				8B8F8E482AD998BD00851199 /* Errors.swift */,
 			);
 			path = Common;
+			sourceTree = "<group>";
+		};
+		8BD2DBE62ADD72840015F2EC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				8BD2DBE72ADD72AF0015F2EC /* PrecipitationModel.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -184,6 +195,7 @@
 				8B33BA892AD82C5000B9E73B /* ContentView.swift in Sources */,
 				8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */,
 				8B8F8E492AD998BD00851199 /* Errors.swift in Sources */,
+				8BD2DBE82ADD72AF0015F2EC /* PrecipitationModel.swift in Sources */,
 				8B8F8E462AD95E8100851199 /* FilePickerView.swift in Sources */,
 				8B33BA9D2AD8420200B9E73B /* RootViewModel.swift in Sources */,
 				8B33BA9B2AD841F300B9E73B /* RootView.swift in Sources */,

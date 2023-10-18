@@ -11,3 +11,7 @@ enum Error: Swift.Error {
     case parseYearsError
     case invalidGridRef
 }
+
+enum DBError: Swift.Error {
+    case batchInsertError
+}

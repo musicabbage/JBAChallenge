@@ -6,20 +6,57 @@
 //
 
 import Foundation
+import CoreData
 
 protocol RootViewModelProtocol: ObservableObject {
+    var items: [PrecipitationItem] { get }
     
-    func readFile(url: URL)
+    func readFile(url: URL) async
 }
 
 class RootViewModel: RootViewModelProtocol {
     
-    func readFile(url: URL) {
+    @Published var items: [PrecipitationItem] = []
+    
+    private let dataController = PersistenceController.shared
+    
+    private var notificationToken: NSObjectProtocol?
+    
+    deinit {
+        removeDataUpdateObserver()
+    }
+    
+    func readFile(url: URL) async {
+        notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self] _ in
+            guard let self else { return }
+            self.fetch()
+        })
         
         guard freopen(url.path(), "r", stdin) != nil else { return }
         
+        var dataModel: PrecipitationModel?
+        var currentGrid: PrecipitationModel.Grid?
         while let line = readLine() {
+            if let dataModel {
+                if let refs = try? findGrid(string: line) {
+                    if let currentGrid {
+                        do {
+                            let result = try await dataController.saveGrid(currentGrid, withModel: dataModel)
+                        } catch {
+                            print("save grid error: \(error)")
+                        }
+                    }
+                    currentGrid = .init(x: refs.x, y: refs.y)
+                } else if currentGrid != nil {
+                    currentGrid!.appendRow(findNumbers(string: line))
+                }
+            } else if let yearString = scan(headerString: line)["Years"],
+                      let years = try? findYears(string: yearString) {
+                dataModel = .init(fromYear: years.from, toYear: years.to, grids: [])
+            }
         }
+        removeDataUpdateObserver()
+        fetch()
     }
 }
 
@@ -112,10 +149,42 @@ private extension RootViewModel {
         }
         return result
     }
+    
+    func removeDataUpdateObserver() {
+        guard let notificationToken else { return }
+        NotificationCenter.default.removeObserver(notificationToken)
+    }
+    
+    func fetch() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            do {
+                let fetchRequest = PrecipitationItem.fetchRequest()
+                self.items = try self.dataController.container.viewContext.fetch(fetchRequest)
+            } catch {
+                print("Fetch failed")
+            }
+        }
+    }
 }
 
 class MockRootViewModel: RootViewModelProtocol {
-    func readFile(url: URL) {
+    @Published var items: [PrecipitationItem] = [.mock, .mock, .mock]
+    
+    func readFile(url: URL) async {
         
     }
 }
+
+extension PrecipitationItem {
+    static var mock: PrecipitationItem {
+        let mockItem = PrecipitationItem(context: NSManagedObjectContext(.mainQueue))
+        mockItem.xref = 1
+        mockItem.yref = 2
+        mockItem.date = ""
+        mockItem.value = 300
+        return mockItem
+    }
+    
+}
+
