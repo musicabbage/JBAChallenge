@@ -25,14 +25,13 @@ class RootViewModel: RootViewModelProtocol {
 
 private extension RootViewModel {
     
-    func scan(headerString: String) throws -> [String: String] {
+    func scan(headerString: String) -> [String: String] {
         let scanner = Scanner(string: headerString)
         scanner.charactersToBeSkipped = ["="]
         var result: [String: String] = [:]
         var currentKey = ""
         
         while !scanner.isAtEnd {
-            print(scanner.currentIndex)
             guard currentKey.isEmpty else {
                 if let value = scanner.scanUpToString("]") {
                     result[currentKey] = value
@@ -49,8 +48,30 @@ private extension RootViewModel {
         return result
     }
     
+    
+    func findYears(string: String) throws -> (from: Int, to: Int)? {
+        let scanner = Scanner(string: string)
+        scanner.charactersToBeSkipped = CharacterSet(charactersIn: "=- ")
+
+        var from: Int!
+        var to: Int!
+        while !scanner.isAtEnd {
+            guard let year = scanner.scanInt() else { continue }
+            if from == nil {
+                from = year
+            } else {
+                to = year
+            }
+        }
+        
+        if from == nil || to == nil {
+            throw Error.parseYearsError
+        }
+        
+        return (from, to)
+    }
+    
     func findGrid(string: String) throws -> (x: Int, y: Int)? {
-        print(string)
         let scanner = Scanner(string: string)
         scanner.charactersToBeSkipped = CharacterSet(charactersIn: "=, ")
 
@@ -82,7 +103,7 @@ private extension RootViewModel {
         
         let scanner = Scanner(string: string)
         
-        guard var value = scanner.scanInt() else { return result }
+        guard let value = scanner.scanInt() else { return result }
         result.append(value)
         while !scanner.isAtEnd {
             if let value = scanner.scanInt() {
