@@ -9,16 +9,28 @@ import Foundation
 
 protocol RootViewModelProtocol: ObservableObject {
     
-    func readFile(url: URL)
+    func readFile(url: URL) async
 }
 
 class RootViewModel: RootViewModelProtocol {
     
-    func readFile(url: URL) {
+    func readFile(url: URL) async {
         
         guard freopen(url.path(), "r", stdin) != nil else { return }
         
+        var dataModel: PrecipitationModel?
+        var currentGrid: PrecipitationModel.Grid?
         while let line = readLine() {
+            if let dataModel {
+                if let refs = try? findGrid(string: line) {
+                    currentGrid = .init(x: refs.x, y: refs.y)
+                } else if currentGrid != nil {
+                    currentGrid!.appendRow(findNumbers(string: line))
+                }
+            } else if let yearString = scan(headerString: line)["Years"],
+                      let years = try? findYears(string: yearString) {
+                dataModel = .init(fromYear: years.from, toYear: years.to, grids: [])
+            }
         }
     }
 }
@@ -115,7 +127,7 @@ private extension RootViewModel {
 }
 
 class MockRootViewModel: RootViewModelProtocol {
-    func readFile(url: URL) {
+    func readFile(url: URL) async {
         
     }
 }

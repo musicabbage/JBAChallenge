@@ -44,7 +44,9 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
         })
         .onChange(of: fileUrl) { oldValue, newValue in
             guard let fileUrl else { return }
-            viewModel.readFile(url: fileUrl)
+            Task {
+                await viewModel.readFile(url: fileUrl)
+            }
         }
     }
 }
