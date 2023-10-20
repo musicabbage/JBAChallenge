@@ -119,8 +119,11 @@ class RootViewModel: RootViewModelProtocol {
 
 private extension RootViewModel {
     func reset() {
-        header = ""
-        items = []
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            header = ""
+            items = []
+        }
     }
     
     func scan(headerString: String) -> [String: String] {
