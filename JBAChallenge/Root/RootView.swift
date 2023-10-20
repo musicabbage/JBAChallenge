@@ -21,6 +21,14 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
         NavigationSplitView(sidebar: {
             NavigationView {
                 VStack {
+                    List(viewModel.files) { file in
+                        Button(action: {
+                            guard let fileName = file.name else { return }
+                            viewModel.fetchGrids(file: fileName)
+                        }) {
+                            Text(file.name ?? "")
+                        }
+                    }
                     Button("Import") {
                         add = true
                         fileUrl = nil
@@ -34,6 +42,9 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                     Text(viewModel.header)
                         .font(.title)
                     Spacer()
+                    ForEach(viewModel.items) { item in
+                        ItemCell(item: item)
+                    }
                 }
             }
         })

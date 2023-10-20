@@ -11,18 +11,24 @@ import CoreData
 protocol RootViewModelProtocol: ObservableObject {
     var header: String { get }
     var items: [PrecipitationItem] { get }
+    var files: [FileItem] { get }
     
     func readFile(url: URL) async
+    func fetchGrids(file: String)
 }
 
 class RootViewModel: RootViewModelProtocol {
     
     @Published var header: String = ""
     @Published var items: [PrecipitationItem] = []
+    @Published var files: [FileItem] = []
     
     private let dataController = PersistenceController.shared
-    
     private var notificationToken: NSObjectProtocol?
+    
+    init() {
+        fetchFiles()
+    }
     
     deinit {
         removeDataUpdateObserver()
@@ -30,13 +36,16 @@ class RootViewModel: RootViewModelProtocol {
     
     func readFile(url: URL) async {
         guard freopen(url.path(), "r", stdin) != nil else { return }
+        
+        reset()
         let fileName = url.lastPathComponent
         
         notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self, fileName] _ in
             guard let self else { return }
-            self.fetch()
+            self.fetchGrids(file: fileName)
         })
         
+        deleteOldIfExisted(fileName: fileName)
         
         var currentGrid: PrecipitationModel.Grid?
         let context = dataController.container.newBackgroundContext()
@@ -78,11 +87,32 @@ class RootViewModel: RootViewModelProtocol {
             }
         }
         removeDataUpdateObserver()
-        fetch()
+        fetchGrids(file: fileName)
         do {
             try context.save()
         } catch {
             print(error)
+        }
+        fetchFiles()
+    }
+    
+    func fetchGrids(file: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            do {
+                let context = self.dataController.container.viewContext
+                let fileFetchRequest = FileItem.fetchRequest()
+                fileFetchRequest.predicate = NSPredicate(format: "name == %@", file)
+                if let file = try? context.fetch(fileFetchRequest).first {
+                    self.header = "Years: \(file.fromYear)-\(file.toYear)"
+                }
+                
+                let fetchRequest = PrecipitationItem.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
+                self.items = try context.fetch(fetchRequest)
+            } catch {
+                print("Fetch failed")
+            }
         }
     }
 }
@@ -186,14 +216,33 @@ private extension RootViewModel {
         NotificationCenter.default.removeObserver(notificationToken)
     }
     
-    func fetch() {
+    func deleteOldIfExisted(fileName: String) {
+        do {
+            let context = self.dataController.container.viewContext
+            let fetchRequest = FileItem.fetchRequest()
+            let predicate = NSPredicate(format: "name == %@", fileName)
+            fetchRequest.predicate = predicate
+            let filesCount = try context.count(for: fetchRequest)
+            if filesCount > 0 {
+                let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PrecipitationItem")
+                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
+                let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+                batchDeleteRequest.resultType = .resultTypeObjectIDs
+                let result = try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
+            }
+        } catch {
+            print("delete existed file failed")
+        }
+    }
+    
+    func fetchFiles() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             do {
-                let fetchRequest = PrecipitationItem.fetchRequest()
-                self.items = try self.dataController.container.viewContext.fetch(fetchRequest)
+                let fetchRequest = FileItem.fetchRequest()
+                self.files = try self.dataController.container.viewContext.fetch(fetchRequest)
             } catch {
-                print("Fetch failed")
+                print("Fetch files failed")
             }
         }
     }
@@ -203,21 +252,28 @@ class MockRootViewModel: RootViewModelProtocol {
     
     @Published var header: String = "Mock header"
     @Published var items: [PrecipitationItem] = [.mock, .mock, .mock]
+    @Published var files: [FileItem] = [.mock, .mock, .mock, .mock]
     
-    func readFile(url: URL) async {
-        
-    }
+    func readFile(url: URL) async { }
+    func fetchGrids(file: String) { }
 }
 
 extension PrecipitationItem {
     static var mock: PrecipitationItem {
-        let mockItem = PrecipitationItem(context: NSManagedObjectContext(.mainQueue))
+        let mockItem = PrecipitationItem()
         mockItem.xref = 1
         mockItem.yref = 2
         mockItem.date = ""
         mockItem.value = 300
         return mockItem
     }
-    
+}
+
+extension FileItem {
+    static var mock: FileItem {
+        let mockItem = FileItem()
+        mockItem.name = "mock.pre"
+        return mockItem
+    }
 }
 
