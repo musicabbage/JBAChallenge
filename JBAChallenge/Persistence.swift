@@ -84,10 +84,10 @@ class PersistenceController {
             }
             
             let batchInsertRequest = NSBatchInsertRequest(entity: PrecipitationItem.entity(), objects: items)
-            
-            if let fetchResult = try? taskContext.execute(batchInsertRequest),
-               let batchInsertResult = fetchResult as? NSBatchInsertResult,
-               let success = batchInsertResult.result as? Bool, success {
+            batchInsertRequest.resultType = .objectIDs
+            if let executeResult = try? taskContext.execute(batchInsertRequest),
+               let batchInsertResult = executeResult as? NSBatchInsertResult,
+               let objectIDs = batchInsertResult.result as? [NSManagedObjectID], !objectIDs.isEmpty {
                 return batchInsertResult
             }
             print("Failed to execute batch insert request.")

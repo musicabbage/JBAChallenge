@@ -87,12 +87,12 @@ class RootViewModel: RootViewModelProtocol {
             }
         }
         removeDataUpdateObserver()
-        fetchGrids(file: fileName)
         do {
             try context.save()
         } catch {
             print(error)
         }
+        fetchGrids(file: fileName)
         fetchFiles()
     }
     
