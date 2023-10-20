@@ -231,7 +231,7 @@ private extension RootViewModel {
                 fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
                 let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                 batchDeleteRequest.resultType = .resultTypeObjectIDs
-                let result = try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
+                try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
             }
         } catch {
             print("delete existed file failed")
