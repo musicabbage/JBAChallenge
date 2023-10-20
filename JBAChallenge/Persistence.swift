@@ -14,10 +14,7 @@ class PersistenceController {
     static var preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
         let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-        }
+        
         do {
             try viewContext.save()
         } catch {
@@ -66,7 +63,7 @@ class PersistenceController {
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
     
-    func saveGrid(_ grid: PrecipitationModel.Grid, withModel model: PrecipitationModel) async throws -> NSBatchInsertResult {
+    func saveGrid(_ grid: PrecipitationModel.Grid, withFileItem fileItem: FileItem) async throws -> NSBatchInsertResult {
         let taskContext = newTaskContext()
         
         /// - Tag: performAndWait
@@ -80,17 +77,17 @@ class PersistenceController {
                 rowItem["xref"] = grid.x
                 rowItem["yref"] = grid.y
                 for (monthOffset, value) in row.enumerated() {
-                    rowItem["date"] = "1/\(monthOffset + 1)/\(yearOffset + model.fromYear)"
+                    rowItem["date"] = "1/\(monthOffset + 1)/\(yearOffset + Int(fileItem.fromYear))"
                     rowItem["value"] = value
                     items.append(rowItem)
                 }
             }
             
             let batchInsertRequest = NSBatchInsertRequest(entity: PrecipitationItem.entity(), objects: items)
-            
-            if let fetchResult = try? taskContext.execute(batchInsertRequest),
-               let batchInsertResult = fetchResult as? NSBatchInsertResult,
-               let success = batchInsertResult.result as? Bool, success {
+            batchInsertRequest.resultType = .objectIDs
+            if let executeResult = try? taskContext.execute(batchInsertRequest),
+               let batchInsertResult = executeResult as? NSBatchInsertResult,
+               let objectIDs = batchInsertResult.result as? [NSManagedObjectID], !objectIDs.isEmpty {
                 return batchInsertResult
             }
             print("Failed to execute batch insert request.")

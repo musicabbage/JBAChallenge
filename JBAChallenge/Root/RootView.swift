@@ -9,7 +9,7 @@ import SwiftUI
 
 struct RootView<ViewModel: RootViewModelProtocol>: View {
     
-    @State private var rowLogs: [Int] = Array(0..<10)
+    @State private var loading: LoadingModel?
     @State private var add: Bool = false
     @State private var fileUrl: URL?
     @ObservedObject private var viewModel: ViewModel
@@ -22,8 +22,13 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
         NavigationSplitView(sidebar: {
             NavigationView {
                 VStack {
-                    List($rowLogs, id: \.self) { log in
-                        Text("\(log.wrappedValue)")
+                    List(viewModel.files) { file in
+                        Button(action: {
+                            guard let fileName = file.name else { return }
+                            viewModel.fetchGrids(file: fileName)
+                        }) {
+                            Text(file.name ?? "")
+                        }
                     }
                     Button("Import") {
                         add = true
@@ -33,19 +38,27 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                 }
             }
         }, detail: {
-            if let fileUrl {
-                Text(fileUrl.absoluteString)
-            } else {
-                Text("import file")
+            ScrollView {
+                LazyVStack {
+                    Text(viewModel.header)
+                        .font(.title)
+                    Spacer()
+                    ForEach(viewModel.items) { item in
+                        ItemCell(item: item)
+                    }
+                }
             }
         })
+        .loadingView($loading)
         .sheet(isPresented: $add, content: {
             FilePickerView(fileUrl: $fileUrl)
         })
         .onChange(of: fileUrl) { oldValue, newValue in
             guard let fileUrl else { return }
             Task {
+                loading = LoadingModel()
                 await viewModel.readFile(url: fileUrl)
+                loading = nil
             }
         }
     }

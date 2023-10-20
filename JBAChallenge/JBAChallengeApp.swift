@@ -10,11 +10,11 @@ import SwiftUI
 @main
 struct JBAChallengeApp: App {
     let persistenceController = PersistenceController.shared
-
+    let rootViewModel: RootViewModel = .init()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            RootView(viewModel: rootViewModel)
         }
     }
 }
