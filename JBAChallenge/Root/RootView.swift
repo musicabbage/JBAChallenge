@@ -56,7 +56,7 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
         .onChange(of: fileUrl) { oldValue, newValue in
             guard let fileUrl else { return }
             Task {
-                loading = LoadingModel()
+                loading = LoadingModel(message: "saving")
                 await viewModel.readFile(url: fileUrl)
                 loading = nil
             }

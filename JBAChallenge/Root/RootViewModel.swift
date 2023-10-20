@@ -47,7 +47,7 @@ class RootViewModel: RootViewModelProtocol {
         
         deleteOldIfExisted(fileName: fileName)
         
-        var currentGrid: PrecipitationModel.Grid?
+        var currentGrid: PrecipitationGridModel?
         let context = dataController.container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         var file: FileItem?
@@ -74,7 +74,6 @@ class RootViewModel: RootViewModelProtocol {
                                 guard let subItem = try? context.existingObject(with: objectId) as? PrecipitationItem else { continue }
                                 file.addToRelationship(subItem)
                             }
-                            print("save result: \(objectIDS.count)")
                         }
                     } catch {
                         print("save grid error: \(error)")
@@ -119,8 +118,11 @@ class RootViewModel: RootViewModelProtocol {
 
 private extension RootViewModel {
     func reset() {
-        header = ""
-        items = []
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            header = ""
+            items = []
+        }
     }
     
     func scan(headerString: String) -> [String: String] {
@@ -228,7 +230,7 @@ private extension RootViewModel {
                 fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
                 let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
                 batchDeleteRequest.resultType = .resultTypeObjectIDs
-                let result = try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
+                try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
             }
         } catch {
             print("delete existed file failed")
