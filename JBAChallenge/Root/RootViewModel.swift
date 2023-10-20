@@ -74,7 +74,6 @@ class RootViewModel: RootViewModelProtocol {
                                 guard let subItem = try? context.existingObject(with: objectId) as? PrecipitationItem else { continue }
                                 file.addToRelationship(subItem)
                             }
-                            print("save result: \(objectIDS.count)")
                         }
                     } catch {
                         print("save grid error: \(error)")
