@@ -9,6 +9,7 @@ import Foundation
 import CoreData
 
 protocol RootViewModelProtocol: ObservableObject {
+    var header: String { get }
     var items: [PrecipitationItem] { get }
     
     func readFile(url: URL) async
@@ -16,6 +17,7 @@ protocol RootViewModelProtocol: ObservableObject {
 
 class RootViewModel: RootViewModelProtocol {
     
+    @Published var header: String = ""
     @Published var items: [PrecipitationItem] = []
     
     private let dataController = PersistenceController.shared
@@ -27,40 +29,69 @@ class RootViewModel: RootViewModelProtocol {
     }
     
     func readFile(url: URL) async {
-        notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self] _ in
+        guard freopen(url.path(), "r", stdin) != nil else { return }
+        let fileName = url.lastPathComponent
+        
+        notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self, fileName] _ in
             guard let self else { return }
             self.fetch()
         })
         
-        guard freopen(url.path(), "r", stdin) != nil else { return }
         
-        var dataModel: PrecipitationModel?
         var currentGrid: PrecipitationModel.Grid?
+        let context = dataController.container.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        var file: FileItem?
+        
         while let line = readLine() {
-            if let dataModel {
-                if let refs = try? findGrid(string: line) {
-                    if let currentGrid {
-                        do {
-                            let result = try await dataController.saveGrid(currentGrid, withModel: dataModel)
-                        } catch {
-                            print("save grid error: \(error)")
-                        }
-                    }
-                    currentGrid = .init(x: refs.x, y: refs.y)
-                } else if currentGrid != nil {
-                    currentGrid!.appendRow(findNumbers(string: line))
+            guard let file else {
+                if let yearString = scan(headerString: line)["Years"],
+                          let years = try? findYears(string: yearString) {
+                    let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
+                    fileItem.name = fileName
+                    fileItem.fromYear = Int16(years.from)
+                    fileItem.toYear = Int16(years.to)
+                    file = fileItem
                 }
-            } else if let yearString = scan(headerString: line)["Years"],
-                      let years = try? findYears(string: yearString) {
-                dataModel = .init(fromYear: years.from, toYear: years.to, grids: [])
+                continue
+            }
+            
+            if let refs = try? findGrid(string: line) {
+                if let currentGrid {
+                    do {
+                        let result = try await dataController.saveGrid(currentGrid, withFileItem: file)
+                        if let objectIDS = result.result as? [NSManagedObjectID] {
+                            for objectId in objectIDS {
+                                guard let subItem = try? context.existingObject(with: objectId) as? PrecipitationItem else { continue }
+                                file.addToRelationship(subItem)
+                            }
+                            print("save result: \(objectIDS.count)")
+                        }
+                    } catch {
+                        print("save grid error: \(error)")
+                        break
+                    }
+                }
+                currentGrid = .init(x: refs.x, y: refs.y)
+            } else if currentGrid != nil {
+                currentGrid!.appendRow(findNumbers(string: line))
             }
         }
         removeDataUpdateObserver()
         fetch()
+        do {
+            try context.save()
+        } catch {
+            print(error)
+        }
     }
 }
 
 private extension RootViewModel {
+    func reset() {
+        header = ""
+        items = []
+    }
     
     func scan(headerString: String) -> [String: String] {
         let scanner = Scanner(string: headerString)
@@ -169,6 +200,8 @@ private extension RootViewModel {
 }
 
 class MockRootViewModel: RootViewModelProtocol {
+    
+    @Published var header: String = "Mock header"
     @Published var items: [PrecipitationItem] = [.mock, .mock, .mock]
     
     func readFile(url: URL) async {

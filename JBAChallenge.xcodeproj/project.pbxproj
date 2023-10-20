@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8B15FB752AE0713100F81A58 /* ItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B15FB742AE0713100F81A58 /* ItemCell.swift */; };
 		8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA862AD82C5000B9E73B /* JBAChallengeApp.swift */; };
 		8B33BA8B2AD82C5200B9E73B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */; };
 		8B33BA8E2AD82C5200B9E73B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B33BA8D2AD82C5200B9E73B /* Preview Assets.xcassets */; };
@@ -20,6 +21,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		8B15FB742AE0713100F81A58 /* ItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemCell.swift; sourceTree = "<group>"; };
 		8B33BA832AD82C5000B9E73B /* JBAChallenge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JBAChallenge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B33BA862AD82C5000B9E73B /* JBAChallengeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JBAChallengeApp.swift; sourceTree = "<group>"; };
 		8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				8B33BA9A2AD841F300B9E73B /* RootView.swift */,
+				8B15FB742AE0713100F81A58 /* ItemCell.swift */,
 				8B33BA9C2AD8420200B9E73B /* RootViewModel.swift */,
 			);
 			path = Root;
@@ -190,6 +193,7 @@
 				8B33BA902AD82C5200B9E73B /* Persistence.swift in Sources */,
 				8B33BA932AD82C5200B9E73B /* JBAChallenge.xcdatamodeld in Sources */,
 				8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */,
+				8B15FB752AE0713100F81A58 /* ItemCell.swift in Sources */,
 				8B8F8E492AD998BD00851199 /* Errors.swift in Sources */,
 				8BD2DBE82ADD72AF0015F2EC /* PrecipitationModel.swift in Sources */,
 				8B8F8E462AD95E8100851199 /* FilePickerView.swift in Sources */,

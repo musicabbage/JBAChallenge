@@ -9,7 +9,6 @@ import SwiftUI
 
 struct RootView<ViewModel: RootViewModelProtocol>: View {
     
-    @State private var rowLogs: [Int] = Array(0..<10)
     @State private var add: Bool = false
     @State private var fileUrl: URL?
     @ObservedObject private var viewModel: ViewModel
@@ -22,9 +21,6 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
         NavigationSplitView(sidebar: {
             NavigationView {
                 VStack {
-                    List($rowLogs, id: \.self) { log in
-                        Text("\(log.wrappedValue)")
-                    }
                     Button("Import") {
                         add = true
                         fileUrl = nil
@@ -33,10 +29,12 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                 }
             }
         }, detail: {
-            if let fileUrl {
-                Text(fileUrl.absoluteString)
-            } else {
-                Text("import file")
+            ScrollView {
+                LazyVStack {
+                    Text(viewModel.header)
+                        .font(.title)
+                    Spacer()
+                }
             }
         })
         .sheet(isPresented: $add, content: {
