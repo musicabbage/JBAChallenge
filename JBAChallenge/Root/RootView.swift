@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RootView<ViewModel: RootViewModelProtocol>: View {
     
+    @State private var loading: LoadingModel?
     @State private var add: Bool = false
     @State private var fileUrl: URL?
     @ObservedObject private var viewModel: ViewModel
@@ -48,13 +49,16 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                 }
             }
         })
+        .loadingView($loading)
         .sheet(isPresented: $add, content: {
             FilePickerView(fileUrl: $fileUrl)
         })
         .onChange(of: fileUrl) { oldValue, newValue in
             guard let fileUrl else { return }
             Task {
+                loading = LoadingModel()
                 await viewModel.readFile(url: fileUrl)
+                loading = nil
             }
         }
     }
