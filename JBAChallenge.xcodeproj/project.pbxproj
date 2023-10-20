@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA862AD82C5000B9E73B /* JBAChallengeApp.swift */; };
-		8B33BA892AD82C5000B9E73B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA882AD82C5000B9E73B /* ContentView.swift */; };
 		8B33BA8B2AD82C5200B9E73B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */; };
 		8B33BA8E2AD82C5200B9E73B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8B33BA8D2AD82C5200B9E73B /* Preview Assets.xcassets */; };
 		8B33BA902AD82C5200B9E73B /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B33BA8F2AD82C5200B9E73B /* Persistence.swift */; };
@@ -23,7 +22,6 @@
 /* Begin PBXFileReference section */
 		8B33BA832AD82C5000B9E73B /* JBAChallenge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JBAChallenge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B33BA862AD82C5000B9E73B /* JBAChallengeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JBAChallengeApp.swift; sourceTree = "<group>"; };
-		8B33BA882AD82C5000B9E73B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8B33BA8D2AD82C5200B9E73B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		8B33BA8F2AD82C5200B9E73B /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
@@ -66,7 +64,6 @@
 			isa = PBXGroup;
 			children = (
 				8B33BA862AD82C5000B9E73B /* JBAChallengeApp.swift */,
-				8B33BA882AD82C5000B9E73B /* ContentView.swift */,
 				8B33BA8A2AD82C5200B9E73B /* Assets.xcassets */,
 				8B33BA8F2AD82C5200B9E73B /* Persistence.swift */,
 				8B8F8E472AD998B300851199 /* Common */,
@@ -192,7 +189,6 @@
 			files = (
 				8B33BA902AD82C5200B9E73B /* Persistence.swift in Sources */,
 				8B33BA932AD82C5200B9E73B /* JBAChallenge.xcdatamodeld in Sources */,
-				8B33BA892AD82C5000B9E73B /* ContentView.swift in Sources */,
 				8B33BA872AD82C5000B9E73B /* JBAChallengeApp.swift in Sources */,
 				8B8F8E492AD998BD00851199 /* Errors.swift in Sources */,
 				8BD2DBE82ADD72AF0015F2EC /* PrecipitationModel.swift in Sources */,
