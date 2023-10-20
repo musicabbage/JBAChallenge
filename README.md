@@ -1,3 +1,4 @@
 # JBAChallenge
 
-![Planning](https://github.com/musicabbage/JBAChallenge/assets/8994570/022b719e-14e7-4e4d-a4ea-f42a099b6a85)
+
+![Planning](https://github.com/musicabbage/JBAChallenge/assets/8994570/171c43eb-bb79-4b67-ac2b-1f5d4c567aeb)
