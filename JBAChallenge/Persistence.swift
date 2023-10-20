@@ -48,7 +48,7 @@ class PersistenceController {
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
     
-    func saveGrid(_ grid: PrecipitationModel.Grid, withFileItem fileItem: FileItem) async throws -> NSBatchInsertResult {
+    func saveGrid(_ grid: PrecipitationGridModel, withFileItem fileItem: FileItem) async throws -> NSBatchInsertResult {
         let taskContext = newTaskContext()
         
         /// - Tag: performAndWait

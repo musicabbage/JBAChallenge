@@ -47,7 +47,7 @@ class RootViewModel: RootViewModelProtocol {
         
         deleteOldIfExisted(fileName: fileName)
         
-        var currentGrid: PrecipitationModel.Grid?
+        var currentGrid: PrecipitationGridModel?
         let context = dataController.container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         var file: FileItem?
