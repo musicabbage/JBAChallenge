@@ -10,6 +10,7 @@ import CoreData
 
 protocol RootViewModelProtocol: ObservableObject {
     var header: String { get }
+    var errorMessage: String? { get }
     var items: [PrecipitationItem] { get }
     var files: [FileItem] { get }
     
@@ -18,7 +19,7 @@ protocol RootViewModelProtocol: ObservableObject {
 }
 
 class RootViewModel: RootViewModelProtocol {
-    
+    @Published var errorMessage: String?
     @Published var header: String = ""
     @Published var items: [PrecipitationItem] = []
     @Published var files: [FileItem] = []
@@ -30,69 +31,55 @@ class RootViewModel: RootViewModelProtocol {
         fetchFiles()
     }
     
-    deinit {
-        removeDataUpdateObserver()
-    }
-    
     func readFile(url: URL) async {
         guard freopen(url.path(), "r", stdin) != nil else { return }
         
         reset()
         let fileName = url.lastPathComponent
         
-        notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self, fileName] _ in
-            guard let self else { return }
-            self.fetchGrids(file: fileName)
-        })
+        let transactionId = dataController.startTransaction()
         
-        deleteOldIfExisted(fileName: fileName)
-        
-        var currentGrid: PrecipitationGridModel?
-        let context = dataController.container.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        var file: FileItem?
-        
-        while let line = readLine() {
-            guard let file else {
-                if let yearString = scan(headerString: line)["Years"],
-                          let years = try? findYears(string: yearString) {
-                    let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
-                    fileItem.name = fileName
-                    fileItem.fromYear = Int16(years.from)
-                    fileItem.toYear = Int16(years.to)
-                    file = fileItem
-                }
-                continue
-            }
-            
-            if let refs = try? findGrid(string: line) {
-                if let currentGrid {
-                    do {
-                        let result = try await dataController.saveGrid(currentGrid, withFileItem: file)
-                        if let objectIDS = result.result as? [NSManagedObjectID] {
-                            for objectId in objectIDS {
-                                guard let subItem = try? context.existingObject(with: objectId) as? PrecipitationItem else { continue }
-                                file.addToRelationship(subItem)
-                            }
-                        }
-                    } catch {
-                        print("save grid error: \(error)")
-                        break
-                    }
-                }
-                currentGrid = .init(x: refs.x, y: refs.y)
-            } else if currentGrid != nil {
-                currentGrid!.appendRow(findNumbers(string: line))
-            }
-        }
-        removeDataUpdateObserver()
         do {
-            try context.save()
+            try dataController.deleteExistedGridRows(inFile: fileName, toTransaction: transactionId)
+            
+            var currentGrid: PrecipitationGridModel?
+            var file: FileItem?
+            
+            while let line = readLine() {
+                guard let file else {
+                    if let yearString = scan(headerString: line)["Years"],
+                       let years = try findYears(string: yearString) {
+                        let fileItem = try dataController.generateFile(fileName: fileName,
+                                                                       fromYear: Int16(years.from),
+                                                                       toYear: Int16(years.to),
+                                                                       toTransaction: transactionId)
+                        file = fileItem
+                    }
+                    continue
+                }
+                
+                if let refs = try findGrid(string: line) {
+                    if let currentGrid {
+                        try dataController.insertGridRows(currentGrid,
+                                                          withFileItem: file,
+                                                          toTransaction: transactionId)
+                    }
+                    currentGrid = .init(x: refs.x, y: refs.y)
+                } else if currentGrid != nil {
+                    currentGrid!.appendRow(findNumbers(string: line))
+                }
+            }
+            try dataController.submitTransaction(id: transactionId)
+            
+            fetchFiles()
+            fetchGrids(file: fileName)
         } catch {
-            print(error)
+            dataController.rollbackTransaction(id: transactionId)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.errorMessage = error.localizedDescription
+            }
         }
-        fetchGrids(file: fileName)
-        fetchFiles()
     }
     
     func fetchGrids(file: String) {
@@ -100,17 +87,16 @@ class RootViewModel: RootViewModelProtocol {
             guard let self else { return }
             do {
                 let context = self.dataController.container.viewContext
-                let fileFetchRequest = FileItem.fetchRequest()
-                fileFetchRequest.predicate = NSPredicate(format: "name == %@", file)
-                if let file = try? context.fetch(fileFetchRequest).first {
-                    self.header = "Years: \(file.fromYear)-\(file.toYear)"
-                }
                 
                 let fetchRequest = PrecipitationItem.fetchRequest()
                 fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
+                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
                 self.items = try context.fetch(fetchRequest)
+                if let file = self.items.first?.origin {
+                    self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
+                }
             } catch {
-                print("Fetch failed")
+                self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
             }
         }
     }
@@ -122,6 +108,7 @@ private extension RootViewModel {
             guard let self else { return }
             header = ""
             items = []
+            errorMessage = nil
         }
     }
     
@@ -213,30 +200,6 @@ private extension RootViewModel {
         return result
     }
     
-    func removeDataUpdateObserver() {
-        guard let notificationToken else { return }
-        NotificationCenter.default.removeObserver(notificationToken)
-    }
-    
-    func deleteOldIfExisted(fileName: String) {
-        do {
-            let context = self.dataController.container.viewContext
-            let fetchRequest = FileItem.fetchRequest()
-            let predicate = NSPredicate(format: "name == %@", fileName)
-            fetchRequest.predicate = predicate
-            let filesCount = try context.count(for: fetchRequest)
-            if filesCount > 0 {
-                let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PrecipitationItem")
-                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
-                let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-                batchDeleteRequest.resultType = .resultTypeObjectIDs
-                try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
-            }
-        } catch {
-            print("delete existed file failed")
-        }
-    }
-    
     func fetchFiles() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -244,14 +207,14 @@ private extension RootViewModel {
                 let fetchRequest = FileItem.fetchRequest()
                 self.files = try self.dataController.container.viewContext.fetch(fetchRequest)
             } catch {
-                print("Fetch files failed")
+                errorMessage = "Fetch files failed"
             }
         }
     }
 }
 
 class MockRootViewModel: RootViewModelProtocol {
-    
+    @Published var errorMessage: String?
     @Published var header: String = "Mock header"
     @Published var items: [PrecipitationItem] = [.mock, .mock, .mock]
     @Published var files: [FileItem] = [.mock, .mock, .mock, .mock]

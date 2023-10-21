@@ -9,26 +9,20 @@ import SwiftUI
 
 struct ItemCell: View {
 
-    @State private var isCellVisible: Bool = true
-    @ObservedObject var item: PrecipitationItem
+    @State var columns: [String]
+    @State var isHeader: Bool = false
+    
     var body: some View {
         HStack {
-            if isCellVisible {
-                Text("\(item.xref)")
-                    .frame(width: /*@START_MENU_TOKEN@*/100/*@END_MENU_TOKEN@*/)
-                Text("\(item.yref)")
-                    .frame(width: /*@START_MENU_TOKEN@*/100/*@END_MENU_TOKEN@*/)
-                Text(item.date ?? "")
-                    .frame(width: /*@START_MENU_TOKEN@*/100/*@END_MENU_TOKEN@*/)
-                Text("\(item.value)")
-                    .frame(width: /*@START_MENU_TOKEN@*/100/*@END_MENU_TOKEN@*/)
-            } else {
-                EmptyView()
+            ForEach(0..<columns.count, id: \.self) { index in
+                Text(columns[index])
+                    .font(isHeader ? .headline : .body)
+                    .frame(width: 100)
             }
         }
     }
 }
 
 #Preview {
-    ItemCell(item: .mock)
+    ItemCell(columns: ["Xref", "Yref", "Date", "Value"])
 }
