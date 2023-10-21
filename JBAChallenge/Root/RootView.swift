@@ -31,8 +31,7 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                         }
                     }
                     Button("Import") {
-                        add = true
-                        fileUrl = nil
+                        importButtonTapped()
                     }
                     .padding()
                 }
@@ -44,6 +43,11 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                     .foregroundStyle(.white)
                     .background(Color.red)
                     .clipShape(.rect(cornerRadius: 8))
+            } else if viewModel.items.isEmpty {
+                Button("Import File") {
+                    importButtonTapped()
+                }
+                .buttonStyle(.borderedProminent)
             } else {
                 ScrollView {
                     LazyVStack {
@@ -79,6 +83,10 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
 }
 
 private extension RootView {
+    func importButtonTapped() {
+        add = true
+        fileUrl = nil
+    }
 }
 
 #Preview {
