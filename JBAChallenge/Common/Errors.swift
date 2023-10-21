@@ -10,6 +10,7 @@ import Foundation
 enum Error: Swift.Error {
     case parseYearsError
     case invalidGridRef
+    case transactionNotExisted
 }
 
 enum DBError: Swift.Error {
