@@ -30,10 +30,6 @@ class RootViewModel: RootViewModelProtocol {
         fetchFiles()
     }
     
-    deinit {
-        removeDataUpdateObserver()
-    }
-    
     func readFile(url: URL) async {
         guard freopen(url.path(), "r", stdin) != nil else { return }
         
@@ -198,12 +194,6 @@ private extension RootViewModel {
         }
         return result
     }
-    
-    func removeDataUpdateObserver() {
-        guard let notificationToken else { return }
-        NotificationCenter.default.removeObserver(notificationToken)
-    }
-    
     
     func fetchFiles() {
         DispatchQueue.main.async { [weak self] in
