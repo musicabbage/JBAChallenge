@@ -107,6 +107,7 @@ class PersistenceController {
                 insertItem.yref = Int16(grid.y)
                 insertItem.date = "1/\(monthOffset + 1)/\(yearOffset + Int(fileItem.fromYear))"
                 insertItem.value = Int32(value)
+                insertItem.order = Int32(fileItem.relationship?.count ?? 0)
                 insertItem.origin = fileItem
             }
         }

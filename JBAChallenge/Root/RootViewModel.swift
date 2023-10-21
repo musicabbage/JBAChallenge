@@ -95,6 +95,7 @@ class RootViewModel: RootViewModelProtocol {
                 
                 let fetchRequest = PrecipitationItem.fetchRequest()
                 fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
+                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
                 self.items = try context.fetch(fetchRequest)
             } catch {
                 print("Fetch failed")
