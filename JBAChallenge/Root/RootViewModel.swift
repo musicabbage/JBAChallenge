@@ -40,59 +40,46 @@ class RootViewModel: RootViewModelProtocol {
         reset()
         let fileName = url.lastPathComponent
         
-        notificationToken = NotificationCenter.default.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: .main, using: { [weak self, fileName] _ in
-            guard let self else { return }
-            self.fetchGrids(file: fileName)
-        })
+        let transactionId = dataController.startTransaction()
         
-        deleteOldIfExisted(fileName: fileName)
-        
-        var currentGrid: PrecipitationGridModel?
-        let context = dataController.container.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        var file: FileItem?
-        
-        while let line = readLine() {
-            guard let file else {
-                if let yearString = scan(headerString: line)["Years"],
-                          let years = try? findYears(string: yearString) {
-                    let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
-                    fileItem.name = fileName
-                    fileItem.fromYear = Int16(years.from)
-                    fileItem.toYear = Int16(years.to)
-                    file = fileItem
-                }
-                continue
-            }
-            
-            if let refs = try? findGrid(string: line) {
-                if let currentGrid {
-                    do {
-                        let result = try await dataController.saveGrid(currentGrid, withFileItem: file)
-                        if let objectIDS = result.result as? [NSManagedObjectID] {
-                            for objectId in objectIDS {
-                                guard let subItem = try? context.existingObject(with: objectId) as? PrecipitationItem else { continue }
-                                file.addToRelationship(subItem)
-                            }
-                        }
-                    } catch {
-                        print("save grid error: \(error)")
-                        break
-                    }
-                }
-                currentGrid = .init(x: refs.x, y: refs.y)
-            } else if currentGrid != nil {
-                currentGrid!.appendRow(findNumbers(string: line))
-            }
-        }
-        removeDataUpdateObserver()
         do {
-            try context.save()
+            try dataController.deleteExistedGridRows(inFile: fileName, toTransaction: transactionId)
+            
+            var currentGrid: PrecipitationGridModel?
+            var file: FileItem?
+            
+            while let line = readLine() {
+                guard let file else {
+                    if let yearString = scan(headerString: line)["Years"],
+                              let years = try? findYears(string: yearString) {
+                        let fileItem = try dataController.generateFile(fileName: fileName,
+                                                                       fromYear: Int16(years.from),
+                                                                       toYear: Int16(years.to),
+                                                                       toTransaction: transactionId)
+                        file = fileItem
+                    }
+                    continue
+                }
+                
+                if let refs = try? findGrid(string: line) {
+                    if let currentGrid {
+                        try dataController.insertGridRows(currentGrid, 
+                                                          withFileItem: file,
+                                                          toTransaction: transactionId)
+                    }
+                    currentGrid = .init(x: refs.x, y: refs.y)
+                } else if currentGrid != nil {
+                    currentGrid!.appendRow(findNumbers(string: line))
+                }
+            }
+            try dataController.submitTransaction(id: transactionId)
+            
+            fetchFiles()
+            fetchGrids(file: fileName)
         } catch {
+            dataController.rollbackTransaction(id: transactionId)
             print(error)
         }
-        fetchGrids(file: fileName)
-        fetchFiles()
     }
     
     func fetchGrids(file: String) {
@@ -218,24 +205,6 @@ private extension RootViewModel {
         NotificationCenter.default.removeObserver(notificationToken)
     }
     
-    func deleteOldIfExisted(fileName: String) {
-        do {
-            let context = self.dataController.container.viewContext
-            let fetchRequest = FileItem.fetchRequest()
-            let predicate = NSPredicate(format: "name == %@", fileName)
-            fetchRequest.predicate = predicate
-            let filesCount = try context.count(for: fetchRequest)
-            if filesCount > 0 {
-                let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PrecipitationItem")
-                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
-                let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-                batchDeleteRequest.resultType = .resultTypeObjectIDs
-                try context.execute(batchDeleteRequest) as! NSBatchDeleteResult
-            }
-        } catch {
-            print("delete existed file failed")
-        }
-    }
     
     func fetchFiles() {
         DispatchQueue.main.async { [weak self] in
