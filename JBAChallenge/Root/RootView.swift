@@ -31,20 +31,38 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                         }
                     }
                     Button("Import") {
-                        add = true
-                        fileUrl = nil
+                        importButtonTapped()
                     }
                     .padding()
                 }
             }
         }, detail: {
-            ScrollView {
-                LazyVStack {
-                    Text(viewModel.header)
-                        .font(.title)
-                    Spacer()
-                    ForEach(viewModel.items) { item in
-                        ItemCell(item: item)
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .padding(22)
+                    .foregroundStyle(.white)
+                    .background(Color.red)
+                    .clipShape(.rect(cornerRadius: 8))
+            } else if viewModel.items.isEmpty {
+                Button("Import File") {
+                    importButtonTapped()
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                ScrollView {
+                    LazyVStack {
+                        Text(viewModel.header)
+                            .font(.title)
+                        Spacer(minLength: 32)
+                        if !viewModel.items.isEmpty {
+                            ItemCell(columns: ["Xref", "Yref", "Date", "Value"], isHeader: true)
+                        }
+                        ForEach(viewModel.items) { item in
+                            ItemCell(columns: ["\(item.xref)",
+                                               "\(item.yref)",
+                                               item.date ?? "",
+                                               "\(item.value)"])
+                        }
                     }
                 }
             }
@@ -65,6 +83,10 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
 }
 
 private extension RootView {
+    func importButtonTapped() {
+        add = true
+        fileUrl = nil
+    }
 }
 
 #Preview {
