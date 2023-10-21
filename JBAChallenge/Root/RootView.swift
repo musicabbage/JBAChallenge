@@ -49,9 +49,15 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                     LazyVStack {
                         Text(viewModel.header)
                             .font(.title)
-                        Spacer()
+                        Spacer(minLength: 32)
+                        if !viewModel.items.isEmpty {
+                            ItemCell(columns: ["Xref", "Yref", "Date", "Value"], isHeader: true)
+                        }
                         ForEach(viewModel.items) { item in
-                            ItemCell(item: item)
+                            ItemCell(columns: ["\(item.xref)",
+                                               "\(item.yref)",
+                                               item.date ?? "",
+                                               "\(item.value)"])
                         }
                     }
                 }
