@@ -111,38 +111,6 @@ class PersistenceController {
             }
         }
     }
-    
-    func saveGrid(_ grid: PrecipitationGridModel, withFileItem fileItem: FileItem) async throws -> NSBatchInsertResult {
-        let taskContext = newTaskContext()
-        
-        /// - Tag: performAndWait
-        return try await taskContext.perform {
-            
-            // Execute the batch insert.
-            /// - Tag: batchInsertRequest
-            var items: [[String: Any]] = []
-            for (yearOffset, row) in grid.rows.enumerated() {
-                var rowItem: [String: Any] = [:]
-                rowItem["xref"] = grid.x
-                rowItem["yref"] = grid.y
-                for (monthOffset, value) in row.enumerated() {
-                    rowItem["date"] = "1/\(monthOffset + 1)/\(yearOffset + Int(fileItem.fromYear))"
-                    rowItem["value"] = value
-                    items.append(rowItem)
-                }
-            }
-            
-            let batchInsertRequest = NSBatchInsertRequest(entity: PrecipitationItem.entity(), objects: items)
-            batchInsertRequest.resultType = .objectIDs
-            if let executeResult = try? taskContext.execute(batchInsertRequest),
-               let batchInsertResult = executeResult as? NSBatchInsertResult,
-               let objectIDs = batchInsertResult.result as? [NSManagedObjectID], !objectIDs.isEmpty {
-                return batchInsertResult
-            }
-            print("Failed to execute batch insert request.")
-            throw DBError.batchInsertError
-        }
-    }
 }
 
 private extension PersistenceController {
@@ -157,5 +125,4 @@ private extension PersistenceController {
         taskContext.undoManager = nil
         return taskContext
     }
-    
 }
