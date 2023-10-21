@@ -87,16 +87,14 @@ class RootViewModel: RootViewModelProtocol {
             guard let self else { return }
             do {
                 let context = self.dataController.container.viewContext
-                let fileFetchRequest = FileItem.fetchRequest()
-                fileFetchRequest.predicate = NSPredicate(format: "name == %@", file)
-                if let file = try? context.fetch(fileFetchRequest).first {
-                    self.header = "Years: \(file.fromYear)-\(file.toYear)"
-                }
                 
                 let fetchRequest = PrecipitationItem.fetchRequest()
                 fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
                 fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
                 self.items = try context.fetch(fetchRequest)
+                if let file = self.items.first?.origin {
+                    self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
+                }
             } catch {
                 print("Fetch failed")
             }
