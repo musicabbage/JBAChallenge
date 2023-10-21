@@ -7,12 +7,16 @@
 
 import Foundation
 
-enum Error: Swift.Error {
+enum Error: Swift.Error, LocalizedError {
     case parseYearsError
     case invalidGridRef
     case transactionNotExisted
-}
-
-enum DBError: Swift.Error {
-    case batchInsertError
+    
+    var errorDescription: String? {
+        switch self {
+        case .parseYearsError: "Parse years info failed"
+        case .invalidGridRef: "Parse grid info failed"
+        case .transactionNotExisted: "Transaction not existed"
+        }
+    }
 }

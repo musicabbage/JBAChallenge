@@ -10,6 +10,7 @@ import CoreData
 
 protocol RootViewModelProtocol: ObservableObject {
     var header: String { get }
+    var errorMessage: String? { get }
     var items: [PrecipitationItem] { get }
     var files: [FileItem] { get }
     
@@ -18,7 +19,7 @@ protocol RootViewModelProtocol: ObservableObject {
 }
 
 class RootViewModel: RootViewModelProtocol {
-    
+    @Published var errorMessage: String?
     @Published var header: String = ""
     @Published var items: [PrecipitationItem] = []
     @Published var files: [FileItem] = []
@@ -47,7 +48,7 @@ class RootViewModel: RootViewModelProtocol {
             while let line = readLine() {
                 guard let file else {
                     if let yearString = scan(headerString: line)["Years"],
-                              let years = try? findYears(string: yearString) {
+                       let years = try findYears(string: yearString) {
                         let fileItem = try dataController.generateFile(fileName: fileName,
                                                                        fromYear: Int16(years.from),
                                                                        toYear: Int16(years.to),
@@ -57,9 +58,9 @@ class RootViewModel: RootViewModelProtocol {
                     continue
                 }
                 
-                if let refs = try? findGrid(string: line) {
+                if let refs = try findGrid(string: line) {
                     if let currentGrid {
-                        try dataController.insertGridRows(currentGrid, 
+                        try dataController.insertGridRows(currentGrid,
                                                           withFileItem: file,
                                                           toTransaction: transactionId)
                     }
@@ -74,7 +75,10 @@ class RootViewModel: RootViewModelProtocol {
             fetchGrids(file: fileName)
         } catch {
             dataController.rollbackTransaction(id: transactionId)
-            print(error)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.errorMessage = error.localizedDescription
+            }
         }
     }
     
@@ -92,7 +96,7 @@ class RootViewModel: RootViewModelProtocol {
                     self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
                 }
             } catch {
-                print("Fetch failed")
+                self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
             }
         }
     }
@@ -104,6 +108,7 @@ private extension RootViewModel {
             guard let self else { return }
             header = ""
             items = []
+            errorMessage = nil
         }
     }
     
@@ -202,14 +207,14 @@ private extension RootViewModel {
                 let fetchRequest = FileItem.fetchRequest()
                 self.files = try self.dataController.container.viewContext.fetch(fetchRequest)
             } catch {
-                print("Fetch files failed")
+                errorMessage = "Fetch files failed"
             }
         }
     }
 }
 
 class MockRootViewModel: RootViewModelProtocol {
-    
+    @Published var errorMessage: String?
     @Published var header: String = "Mock header"
     @Published var items: [PrecipitationItem] = [.mock, .mock, .mock]
     @Published var files: [FileItem] = [.mock, .mock, .mock, .mock]

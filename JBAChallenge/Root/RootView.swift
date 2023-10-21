@@ -38,13 +38,21 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                 }
             }
         }, detail: {
-            ScrollView {
-                LazyVStack {
-                    Text(viewModel.header)
-                        .font(.title)
-                    Spacer()
-                    ForEach(viewModel.items) { item in
-                        ItemCell(item: item)
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .padding(22)
+                    .foregroundStyle(.white)
+                    .background(Color.red)
+                    .clipShape(.rect(cornerRadius: 8))
+            } else {
+                ScrollView {
+                    LazyVStack {
+                        Text(viewModel.header)
+                            .font(.title)
+                        Spacer()
+                        ForEach(viewModel.items) { item in
+                            ItemCell(item: item)
+                        }
                     }
                 }
             }
