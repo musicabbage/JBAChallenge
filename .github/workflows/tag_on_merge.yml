@@ -1,0 +1,31 @@
+name: Tag on Merge
+
+on:
+  push:
+    branches:
+      - master
+      
+permissions:
+  contents: write
+
+jobs:
+  add-tag:
+    runs-on: macos-12
+          
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3 
+          
+      - name: Get Bundle Version
+        id: bundle_version
+        run: |
+          bundle_version=$(cat JBAChallenge.xcodeproj/project.pbxproj | grep -m1 'MARKETING_VERSION' | cut -d'=' -f2 | tr -d ';' | tr -d ' ')
+          echo "::set-output name=version::${bundle_version}"
+      
+      - name: Add Tag
+        run: |
+          echo "::set-output name=version::${{steps.bundle_version.outputs.version}}"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag -a "v${{ steps.bundle_version.outputs.version }}" -m "Version ${{ steps.bundle_version.outputs.version }}"
+          git push origin "v${{ steps.bundle_version.outputs.version }}"
