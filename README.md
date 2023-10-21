@@ -2,8 +2,9 @@
 
 
 ### Improvement List
-- [ ] Add transaction mechanism. (https://github.com/musicabbage/JBAChallenge/issues/18)
-- [ ] Show error message (https://github.com/musicabbage/JBAChallenge/issues/19)
+Finished with version [v1.1](https://github.com/musicabbage/JBAChallenge/releases/tag/v1.1)
+- [x] ~~Add transaction mechanism.~~ (https://github.com/musicabbage/JBAChallenge/issues/18)
+- [x] ~~Show error message~~ (https://github.com/musicabbage/JBAChallenge/issues/19)
 ---
 ### Instructions
 1. Select Mac to be the running target.
