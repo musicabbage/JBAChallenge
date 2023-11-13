@@ -57,11 +57,17 @@ struct RootView<ViewModel: RootViewModelProtocol>: View {
                         if !viewModel.items.isEmpty {
                             ItemCell(columns: ["Xref", "Yref", "Date", "Value"], isHeader: true)
                         }
-                        ForEach(viewModel.items) { item in
+                        
+                        ForEach(0..<viewModel.items.count, id: \.self) { index in
+                            let item = viewModel.items[index]
                             ItemCell(columns: ["\(item.xref)",
                                                "\(item.yref)",
                                                item.date ?? "",
                                                "\(item.value)"])
+                            .onAppear {
+                                guard index >= viewModel.items.count - 1 else { return }
+                                viewModel.fetchNextPage()
+                            }
                         }
                     }
                 }

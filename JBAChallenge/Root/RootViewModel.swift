@@ -16,6 +16,7 @@ protocol RootViewModelProtocol: ObservableObject {
     
     func readFile(url: URL) async
     func fetchGrids(file: String)
+    func fetchNextPage()
 }
 
 class RootViewModel: RootViewModelProtocol {
@@ -25,7 +26,7 @@ class RootViewModel: RootViewModelProtocol {
     @Published var files: [FileItem] = []
     
     private let dataController = PersistenceController.shared
-    private var notificationToken: NSObjectProtocol?
+    private var currentFetch: NSFetchRequest<PrecipitationItem>?
     
     init() {
         fetchFiles()
@@ -77,8 +78,8 @@ class RootViewModel: RootViewModelProtocol {
             dataController.batchInsertGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
             
             try await dataController.submitTransaction(id: transactionId)
-//            fetchFiles()
-//            fetchGrids(file: fileName)
+            fetchFiles()
+            fetchGrids(file: fileName)
 
         } catch {
             dataController.rollbackTransaction(id: transactionId)
@@ -97,14 +98,28 @@ class RootViewModel: RootViewModelProtocol {
                 
                 let fetchRequest = PrecipitationItem.fetchRequest()
                 fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
-//                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
+                fetchRequest.fetchLimit = 12
                 self.items = try context.fetch(fetchRequest)
                 if let file = self.items.first?.origin {
                     self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
                 }
+                self.currentFetch = fetchRequest
             } catch {
                 self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
             }
+        }
+    }
+    
+    func fetchNextPage() {
+        guard let fetchRequest = currentFetch else { return }
+        let context = self.dataController.container.viewContext
+        
+        do {
+            fetchRequest.fetchOffset = items.count
+            let items = try context.fetch(fetchRequest)
+            self.items.append(contentsOf: items)
+        } catch {
+            self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
         }
     }
 }
@@ -228,6 +243,7 @@ class MockRootViewModel: RootViewModelProtocol {
     
     func readFile(url: URL) async { }
     func fetchGrids(file: String) { }
+    func fetchNextPage() { }
 }
 
 extension PrecipitationItem {
