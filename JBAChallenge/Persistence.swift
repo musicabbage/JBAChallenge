@@ -58,38 +58,6 @@ class PersistenceController {
         return transactionId
     }
     
-    func generateFile(fileName: String, fromYear: Int16, toYear: Int16, toTransaction transactionId: String) throws -> FileItem {
-        guard let context = contexts[transactionId] else { throw Error.transactionNotExisted }
-        let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
-        fileItem.name = fileName
-        fileItem.fromYear = fromYear
-        fileItem.toYear = toYear
-        return fileItem
-    }
-    
-    func generateBatchFile(fileName: String, fromYear: Int16, toYear: Int16, toTransaction transactionId: String) throws -> NSBatchInsertRequest {
-        guard let context = contexts[transactionId] else { throw Error.transactionNotExisted }
-        //let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
-//        fileItem.name = fileName
-//        fileItem.fromYear = fromYear
-//        fileItem.toYear = toYear
-//        return fileItem
-//        let fileItem: [String: Any] = [:]
-        
-        let batchInsertRequest = NSBatchInsertRequest(entity: FileItem.entity(), managedObjectHandler: { object in
-            guard let fileItem = object as? FileItem else { return true }
-            fileItem.name = fileName
-            fileItem.fromYear = fromYear
-            fileItem.toYear = toYear
-            
-            return false
-        })
-        batchInsertRequest.resultType = .objectIDs
-        //batchRequest.append(batchInsertRequest)
-        //self.batchInsertRequest = batchInsertRequest
-        return batchInsertRequest
-    }
-    
     func submitTransaction(id: String) async throws {
         guard let requests = batchRequests[id], !requests.isEmpty else { throw Error.transactionNotExisted }
         
@@ -106,6 +74,20 @@ class PersistenceController {
     
     func rollbackTransaction(id: String) {
         batchRequests[id] = nil
+    }
+    
+    func saveFile(name fileName: String, fromYear: Int16, toYear: Int16, toTransaction transactionId: String) {
+        let fileItem: [String : Any] = ["name": fileName,
+                                        "fromYear": fromYear,
+                                        "toYear": toYear]
+        let batchInsertRequest = NSBatchInsertRequest(entity: FileItem.entity(), objects: [fileItem])
+        batchInsertRequest.resultType = .count
+        if var requests = batchRequests[transactionId] {
+            requests.append(batchInsertRequest)
+            batchRequests[transactionId] = requests
+        } else {
+            batchRequests[transactionId] = [batchInsertRequest]
+        }
     }
     
     func batchDeleteGridRows(inFile fileName: String, toTransaction transactionId: String) {

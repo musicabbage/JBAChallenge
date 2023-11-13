@@ -40,7 +40,6 @@ class RootViewModel: RootViewModelProtocol {
         let transactionId = dataController.startTransaction()
         
         do {
-            dataController.batchDeleteGridRows(inFile: fileName, toTransaction: transactionId)
             
             var currentGrid: PrecipitationGridModel?
             var fromYear = 0
@@ -51,6 +50,10 @@ class RootViewModel: RootViewModelProtocol {
                     if let yearString = scan(headerString: line)["Years"],
                        let years = try findYears(string: yearString) {
                         fromYear = years.from
+                        dataController.saveFile(name: fileName,
+                                                fromYear: Int16(years.from),
+                                                toYear: Int16(years.to),
+                                                toTransaction: transactionId)
                     }
                     continue
                 }
@@ -70,6 +73,7 @@ class RootViewModel: RootViewModelProtocol {
             }
             
             
+            dataController.batchDeleteGridRows(inFile: fileName, toTransaction: transactionId)
             dataController.batchInsertGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
             
             try await dataController.submitTransaction(id: transactionId)
