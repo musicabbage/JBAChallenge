@@ -13,6 +13,7 @@
     </entity>
     <entity name="PrecipitationItem" representedClassName="PrecipitationItem" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="String"/>
+        <attribute name="fileName" optional="YES" attributeType="String"/>
         <attribute name="order" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="value" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="xref" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>

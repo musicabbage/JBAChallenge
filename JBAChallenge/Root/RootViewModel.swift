@@ -40,39 +40,41 @@ class RootViewModel: RootViewModelProtocol {
         let transactionId = dataController.startTransaction()
         
         do {
-            try dataController.deleteExistedGridRows(inFile: fileName, toTransaction: transactionId)
+            dataController.batchDeleteGridRows(inFile: fileName, toTransaction: transactionId)
             
             var currentGrid: PrecipitationGridModel?
-            var file: FileItem?
+            var fromYear = 0
+            var grids: [PrecipitationGridModel] = []
             
             while let line = readLine() {
-                guard let file else {
+                guard fromYear > 0 else {
                     if let yearString = scan(headerString: line)["Years"],
                        let years = try findYears(string: yearString) {
-                        let fileItem = try dataController.generateFile(fileName: fileName,
-                                                                       fromYear: Int16(years.from),
-                                                                       toYear: Int16(years.to),
-                                                                       toTransaction: transactionId)
-                        file = fileItem
+                        fromYear = years.from
                     }
                     continue
                 }
                 
                 if let refs = try findGrid(string: line) {
                     if let currentGrid {
-                        try dataController.insertGridRows(currentGrid,
-                                                          withFileItem: file,
-                                                          toTransaction: transactionId)
+                        grids.append(currentGrid)
                     }
                     currentGrid = .init(x: refs.x, y: refs.y)
                 } else if currentGrid != nil {
                     currentGrid!.appendRow(findNumbers(string: line))
                 }
             }
-            try dataController.submitTransaction(id: transactionId)
             
-            fetchFiles()
-            fetchGrids(file: fileName)
+            if let currentGrid {
+                grids.append(currentGrid)
+            }
+            
+            dataController.saveGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
+            
+            try await dataController.submitTransaction(id: transactionId)
+//            fetchFiles()
+//            fetchGrids(file: fileName)
+
         } catch {
             dataController.rollbackTransaction(id: transactionId)
             DispatchQueue.main.async { [weak self] in
@@ -89,8 +91,8 @@ class RootViewModel: RootViewModelProtocol {
                 let context = self.dataController.container.viewContext
                 
                 let fetchRequest = PrecipitationItem.fetchRequest()
-                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
-                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
+                fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
+//                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
                 self.items = try context.fetch(fetchRequest)
                 if let file = self.items.first?.origin {
                     self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"

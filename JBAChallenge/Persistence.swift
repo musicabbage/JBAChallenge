@@ -13,7 +13,9 @@ class PersistenceController {
 
     let container: NSPersistentContainer
     private var contexts: [String: NSManagedObjectContext] = [:]
-
+    private var batchRequests: [String: [NSPersistentStoreRequest]] = [:]
+    
+    
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "JBAChallenge")
         
@@ -24,7 +26,7 @@ class PersistenceController {
         if inMemory {
             description.url = URL(fileURLWithPath: "/dev/null")
         }
-        
+        print(description.url)
         // Enable persistent store remote change notifications
         /// - Tag: persistentStoreRemoteChange
         description.setOption(true as NSNumber,
@@ -50,7 +52,7 @@ class PersistenceController {
     }
     
     func startTransaction() -> String {
-        let context = newTaskContext()
+        let context = newBackgroundTaskContext()
         let transactionId = UUID().uuidString
         contexts[transactionId] = context
         return transactionId
@@ -65,58 +67,92 @@ class PersistenceController {
         return fileItem
     }
     
-    func submitTransaction(id: String) throws {
-        guard let context = contexts[id] else { throw Error.transactionNotExisted }
-        print("=============================")
-        print("insert: \(context.insertedObjects.count)")
-        print("delete: \(context.deletedObjects.count)")
-        print("=============================")
-        try context.save()
-        contexts[id] = nil
-    }
-    
-    @discardableResult
-    func rollbackTransaction(id: String) -> Bool {
-        guard let context = contexts[id] else {
-            return false
-        }
-        context.rollback()
-        contexts[id] = nil
-        return true
-    }
-    
-    func deleteExistedGridRows(inFile fileName: String, toTransaction transactionId: String) throws {
+    func generateBatchFile(fileName: String, fromYear: Int16, toYear: Int16, toTransaction transactionId: String) throws -> NSBatchInsertRequest {
         guard let context = contexts[transactionId] else { throw Error.transactionNotExisted }
-        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PrecipitationItem")
-        fetchRequest.predicate = NSPredicate(format: "origin.name == %@", fileName)
-        guard let existedGridRows = try context.fetch(fetchRequest) as? [PrecipitationItem] else {
-            return
-        }
-        for row in existedGridRows {
-            context.delete(row)
-        }
-    }
-    
-    func insertGridRows(_ grid: PrecipitationGridModel, withFileItem fileItem: FileItem, toTransaction transactionId: String) throws {
-        guard let context = contexts[transactionId] else { throw Error.transactionNotExisted }
+        //let fileItem = FileItem(entity: FileItem.entity(), insertInto: context)
+//        fileItem.name = fileName
+//        fileItem.fromYear = fromYear
+//        fileItem.toYear = toYear
+//        return fileItem
+//        let fileItem: [String: Any] = [:]
         
-        for (yearOffset, row) in grid.rows.enumerated() {
-            for (monthOffset, value) in row.enumerated() {
-                let insertItem = PrecipitationItem(entity: PrecipitationItem.entity(), insertInto: context)
-                insertItem.xref = Int16(grid.x)
-                insertItem.yref = Int16(grid.y)
-                insertItem.date = "1/\(monthOffset + 1)/\(yearOffset + Int(fileItem.fromYear))"
-                insertItem.value = Int32(value)
-                insertItem.order = Int32(fileItem.relationship?.count ?? 0)
-                insertItem.origin = fileItem
+        let batchInsertRequest = NSBatchInsertRequest(entity: FileItem.entity(), managedObjectHandler: { object in
+            guard let fileItem = object as? FileItem else { return true }
+            fileItem.name = fileName
+            fileItem.fromYear = fromYear
+            fileItem.toYear = toYear
+            
+            return false
+        })
+        batchInsertRequest.resultType = .objectIDs
+        //batchRequest.append(batchInsertRequest)
+        //self.batchInsertRequest = batchInsertRequest
+        return batchInsertRequest
+    }
+    
+    func submitTransaction(id: String) async throws {
+        guard let requests = batchRequests[id], !requests.isEmpty else { throw Error.transactionNotExisted }
+        
+        let context = newBackgroundTaskContext()
+        try await context.perform { [weak self] in
+            for request in requests {
+                let result = try context.execute(request)
+                print("result: \(result)")
             }
+        }
+        print("transaction end =========")
+        batchRequests[id] = nil
+    }
+    
+    func rollbackTransaction(id: String) {
+        batchRequests[id] = nil
+    }
+    
+    func batchDeleteGridRows(inFile fileName: String, toTransaction transactionId: String) {
+        let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "PrecipitationItem")
+        fetchRequest.predicate = NSPredicate(format: "fileName == %@", fileName)
+        fetchRequest.includesPropertyValues = false
+        let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        batchDeleteRequest.resultType = .resultTypeObjectIDs
+        
+        if var requests = batchRequests[transactionId] {
+            requests.append(batchDeleteRequest)
+            batchRequests[transactionId] = requests
+        } else {
+            batchRequests[transactionId] = [batchDeleteRequest]
+        }
+    }
+    
+    func saveGrids(_ grids: [PrecipitationGridModel], withFileName fileName: String, fromYear: Int, toTransaction transactionId: String) {
+        var items: [[String: Any]] = []
+        for grid in grids {
+            for (yearOffset, row) in grid.rows.enumerated() {
+                var rowItem: [String: Any] = [:]
+                rowItem["xref"] = grid.x
+                rowItem["yref"] = grid.y
+                rowItem["fileName"] = fileName
+                for (monthOffset, value) in row.enumerated() {
+                    rowItem["date"] = "1/\(monthOffset + 1)/\(yearOffset + fromYear)"
+                    rowItem["value"] = value
+                    items.append(rowItem)
+                }
+            }
+        }
+        
+        let batchInsertRequest = NSBatchInsertRequest(entity: PrecipitationItem.entity(), objects: items)
+        batchInsertRequest.resultType = .count
+        if var requests = batchRequests[transactionId] {
+            requests.append(batchInsertRequest)
+            batchRequests[transactionId] = requests
+        } else {
+            batchRequests[transactionId] = [batchInsertRequest]
         }
     }
 }
 
 private extension PersistenceController {
     /// Creates and configures a private queue context.
-    func newTaskContext() -> NSManagedObjectContext {
+    func newBackgroundTaskContext() -> NSManagedObjectContext {
         // Create a private queue context.
         /// - Tag: newBackgroundContext
         let taskContext = container.newBackgroundContext()
