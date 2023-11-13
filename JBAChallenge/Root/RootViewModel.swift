@@ -69,7 +69,8 @@ class RootViewModel: RootViewModelProtocol {
                 grids.append(currentGrid)
             }
             
-            dataController.saveGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
+            
+            dataController.batchInsertGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
             
             try await dataController.submitTransaction(id: transactionId)
 //            fetchFiles()

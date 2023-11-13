@@ -123,7 +123,7 @@ class PersistenceController {
         }
     }
     
-    func saveGrids(_ grids: [PrecipitationGridModel], withFileName fileName: String, fromYear: Int, toTransaction transactionId: String) {
+    func batchInsertGrids(_ grids: [PrecipitationGridModel], withFileName fileName: String, fromYear: Int, toTransaction transactionId: String) {
         var items: [[String: Any]] = []
         for grid in grids {
             for (yearOffset, row) in grid.rows.enumerated() {
