@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol RootViewModelProtocol: ObservableObject {
     var header: String { get }
     var errorMessage: String? { get }
@@ -83,55 +84,47 @@ class RootViewModel: RootViewModelProtocol {
 
         } catch {
             dataController.rollbackTransaction(id: transactionId)
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.errorMessage = error.localizedDescription
-            }
+            errorMessage = error.localizedDescription
         }
     }
     
     func fetchGrids(file: String) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            do {
-                let context = self.dataController.container.viewContext
-                
-                let fetchRequest = PrecipitationItem.fetchRequest()
-                fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
-                fetchRequest.fetchLimit = 12
-                self.items = try context.fetch(fetchRequest)
-                if let file = self.items.first?.origin {
-                    self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
-                }
-                self.currentFetch = fetchRequest
-            } catch {
-                self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
+        do {
+            let context = dataController.container.viewContext
+            
+            let fetchRequest = PrecipitationItem.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
+            fetchRequest.fetchLimit = 12
+            
+            items = try context.fetch(fetchRequest)
+            if let file = items.first?.origin {
+                header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
             }
+            currentFetch = fetchRequest
+        } catch {
+            errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
         }
     }
     
     func fetchNextPage() {
         guard let fetchRequest = currentFetch else { return }
-        let context = self.dataController.container.viewContext
+        let context = dataController.container.viewContext
         
         do {
             fetchRequest.fetchOffset = items.count
             let items = try context.fetch(fetchRequest)
             self.items.append(contentsOf: items)
         } catch {
-            self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
+            errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
         }
     }
 }
 
 private extension RootViewModel {
     func reset() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            header = ""
-            items = []
-            errorMessage = nil
-        }
+        header = ""
+        items = []
+        errorMessage = nil
     }
     
     func scan(headerString: String) -> [String: String] {
