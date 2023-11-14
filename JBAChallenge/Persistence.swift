@@ -25,7 +25,7 @@ class PersistenceController {
         if inMemory {
             description.url = URL(fileURLWithPath: "/dev/null")
         }
-        print(description.url)
+        
         // Enable persistent store remote change notifications
         /// - Tag: persistentStoreRemoteChange
         description.setOption(true as NSNumber,
@@ -51,9 +51,7 @@ class PersistenceController {
     }
     
     func startTransaction() -> String {
-        let context = newBackgroundTaskContext()
-        let transactionId = UUID().uuidString
-        return transactionId
+        return UUID().uuidString
     }
     
     func submitTransaction(id: String) async throws {
@@ -63,10 +61,9 @@ class PersistenceController {
         try await context.perform {
             for request in requests {
                 let result = try context.execute(request)
-                print("result: \(result)")
             }
         }
-        print("transaction end =========")
+        
         updateBatchRequests(transactionId: id, batchRequest: nil)
     }
     
