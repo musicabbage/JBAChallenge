@@ -12,9 +12,8 @@ class PersistenceController {
     static let shared = PersistenceController()
 
     let container: NSPersistentContainer
-    private var contexts: [String: NSManagedObjectContext] = [:]
+    private let transactionQueue = DispatchSerialQueue(label: "com.jbachallenge.transaction", qos: .default)
     private var batchRequests: [String: [NSPersistentStoreRequest]] = [:]
-    
     
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "JBAChallenge")
@@ -54,7 +53,6 @@ class PersistenceController {
     func startTransaction() -> String {
         let context = newBackgroundTaskContext()
         let transactionId = UUID().uuidString
-        contexts[transactionId] = context
         return transactionId
     }
     
@@ -69,25 +67,21 @@ class PersistenceController {
             }
         }
         print("transaction end =========")
-        batchRequests[id] = nil
+        updateBatchRequests(transactionId: id, batchRequest: nil)
     }
     
     func rollbackTransaction(id: String) {
-        batchRequests[id] = nil
+        updateBatchRequests(transactionId: id, batchRequest: nil)
     }
     
     func saveFile(name fileName: String, fromYear: Int16, toYear: Int16, toTransaction transactionId: String) {
         let fileItem: [String : Any] = ["name": fileName,
                                         "fromYear": fromYear,
                                         "toYear": toYear]
-        let batchInsertRequest = NSBatchInsertRequest(entity: FileItem.entity(), objects: [fileItem])
-        batchInsertRequest.resultType = .count
-        if var requests = batchRequests[transactionId] {
-            requests.append(batchInsertRequest)
-            batchRequests[transactionId] = requests
-        } else {
-            batchRequests[transactionId] = [batchInsertRequest]
-        }
+        let insertFileRequest = NSBatchInsertRequest(entity: FileItem.entity(), objects: [fileItem])
+        insertFileRequest.resultType = .count
+        
+        updateBatchRequests(transactionId: transactionId, batchRequest: insertFileRequest)
     }
     
     func batchDeleteGridRows(inFile fileName: String, toTransaction transactionId: String) {
@@ -97,12 +91,7 @@ class PersistenceController {
         let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         batchDeleteRequest.resultType = .resultTypeObjectIDs
         
-        if var requests = batchRequests[transactionId] {
-            requests.append(batchDeleteRequest)
-            batchRequests[transactionId] = requests
-        } else {
-            batchRequests[transactionId] = [batchDeleteRequest]
-        }
+        updateBatchRequests(transactionId: transactionId, batchRequest: batchDeleteRequest)
     }
     
     func batchInsertGrids(_ grids: [PrecipitationGridModel], withFileName fileName: String, fromYear: Int, toTransaction transactionId: String) {
@@ -123,11 +112,22 @@ class PersistenceController {
         
         let batchInsertRequest = NSBatchInsertRequest(entity: PrecipitationItem.entity(), objects: items)
         batchInsertRequest.resultType = .count
-        if var requests = batchRequests[transactionId] {
-            requests.append(batchInsertRequest)
-            batchRequests[transactionId] = requests
-        } else {
-            batchRequests[transactionId] = [batchInsertRequest]
+        updateBatchRequests(transactionId: transactionId, batchRequest: batchInsertRequest)
+    }
+    
+    func updateBatchRequests(transactionId: String, batchRequest: NSPersistentStoreRequest?) {
+        transactionQueue.sync {
+            guard let batchRequest else {
+                batchRequests[transactionId] = nil
+                return
+            }
+            
+            if var requests = batchRequests[transactionId] {
+                requests.append(batchRequest)
+                batchRequests[transactionId] = requests
+            } else {
+                batchRequests[transactionId] = [batchRequest]
+            }
         }
     }
 }
