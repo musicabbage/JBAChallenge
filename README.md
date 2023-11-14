@@ -1,5 +1,12 @@
 # JBAChallenge
 
+### v1.2 Release notes:
+1. Made the transaction dictionary to be thread-safe.
+2. Memory usage optimisation.
+    - Used `NSBatchDeleteRequest/NSBatchInsertRequest` instead of insert/delete entity items individually.
+    - Added pagination when fetching grid data.
+
+---
 
 ### Improvement List
 Finished with version [v1.1](https://github.com/musicabbage/JBAChallenge/releases/tag/v1.1)
@@ -7,6 +14,13 @@ Finished with version [v1.1](https://github.com/musicabbage/JBAChallenge/release
 - [x] ~~Show error message~~ (https://github.com/musicabbage/JBAChallenge/issues/19)
 ---
 ### Instructions
+
+> Running environment:
+> 
+> MacOS: **Sonoma 14.0**
+> 
+> Xcode: **15.0.0**
+
 1. Select Mac to be the running target.
 <img width="972" alt="Screenshot 2023-10-21 at 23 01 00" src="https://github.com/musicabbage/JBAChallenge/assets/8994570/ea140953-cf4c-4385-830f-7d1a0a6b1971">
 
