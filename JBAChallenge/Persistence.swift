@@ -60,7 +60,7 @@ class PersistenceController {
         guard let requests = batchRequests[id], !requests.isEmpty else { throw Error.transactionNotExisted }
         
         let context = newBackgroundTaskContext()
-        try await context.perform { [weak self] in
+        try await context.perform {
             for request in requests {
                 let result = try context.execute(request)
                 print("result: \(result)")
