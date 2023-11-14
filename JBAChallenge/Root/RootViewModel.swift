@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 
+@MainActor
 protocol RootViewModelProtocol: ObservableObject {
     var header: String { get }
     var errorMessage: String? { get }
@@ -16,6 +17,7 @@ protocol RootViewModelProtocol: ObservableObject {
     
     func readFile(url: URL) async
     func fetchGrids(file: String)
+    func fetchNextPage()
 }
 
 class RootViewModel: RootViewModelProtocol {
@@ -25,7 +27,7 @@ class RootViewModel: RootViewModelProtocol {
     @Published var files: [FileItem] = []
     
     private let dataController = PersistenceController.shared
-    private var notificationToken: NSObjectProtocol?
+    private var currentFetch: NSFetchRequest<PrecipitationItem>?
     
     init() {
         fetchFiles()
@@ -40,76 +42,105 @@ class RootViewModel: RootViewModelProtocol {
         let transactionId = dataController.startTransaction()
         
         do {
-            try dataController.deleteExistedGridRows(inFile: fileName, toTransaction: transactionId)
             
             var currentGrid: PrecipitationGridModel?
-            var file: FileItem?
+            var fromYear = 0
+            var grids: [PrecipitationGridModel] = []
             
             while let line = readLine() {
-                guard let file else {
+                guard fromYear > 0 else {
                     if let yearString = scan(headerString: line)["Years"],
                        let years = try findYears(string: yearString) {
-                        let fileItem = try dataController.generateFile(fileName: fileName,
-                                                                       fromYear: Int16(years.from),
-                                                                       toYear: Int16(years.to),
-                                                                       toTransaction: transactionId)
-                        file = fileItem
+                        fromYear = years.from
+                        dataController.saveFile(name: fileName,
+                                                fromYear: Int16(years.from),
+                                                toYear: Int16(years.to),
+                                                toTransaction: transactionId)
                     }
                     continue
                 }
                 
                 if let refs = try findGrid(string: line) {
                     if let currentGrid {
-                        try dataController.insertGridRows(currentGrid,
-                                                          withFileItem: file,
-                                                          toTransaction: transactionId)
+                        grids.append(currentGrid)
                     }
                     currentGrid = .init(x: refs.x, y: refs.y)
                 } else if currentGrid != nil {
                     currentGrid!.appendRow(findNumbers(string: line))
                 }
             }
-            try dataController.submitTransaction(id: transactionId)
             
+            if let currentGrid {
+                grids.append(currentGrid)
+            }
+            
+            
+            dataController.batchDeleteGridRows(inFile: fileName, toTransaction: transactionId)
+            dataController.batchInsertGrids(grids, withFileName: fileName, fromYear: fromYear, toTransaction: transactionId)
+            
+            try await dataController.submitTransaction(id: transactionId)
             fetchFiles()
             fetchGrids(file: fileName)
+
         } catch {
             dataController.rollbackTransaction(id: transactionId)
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.errorMessage = error.localizedDescription
-            }
+            errorMessage = error.localizedDescription
         }
     }
     
     func fetchGrids(file: String) {
-        DispatchQueue.main.async { [weak self] in
+        reset()
+        Task { [weak self] in
             guard let self else { return }
+            let context = dataController.container.viewContext
+            
             do {
-                let context = self.dataController.container.viewContext
-                
-                let fetchRequest = PrecipitationItem.fetchRequest()
-                fetchRequest.predicate = NSPredicate(format: "origin.name == %@", file)
-                fetchRequest.sortDescriptors = [NSSortDescriptor(key: "order", ascending: true)]
-                self.items = try context.fetch(fetchRequest)
-                if let file = self.items.first?.origin {
-                    self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
+                try await context.perform {
+                    let fetchRequest = PrecipitationItem.fetchRequest()
+                    fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
+                    fetchRequest.fetchLimit = 12
+                    self.items = try context.fetch(fetchRequest)
+                    
+                    self.currentFetch = fetchRequest
+                    
+                    //count
+                    let countFetchRequest = PrecipitationItem.fetchRequest()
+                    countFetchRequest.predicate = fetchRequest.predicate
+                    let count = try context.count(for: countFetchRequest)
+                    
+                    //header
+                    let fileFetchRequest = FileItem.fetchRequest()
+                    fileFetchRequest.predicate = NSPredicate(format: "name == %@", file)
+                   
+                    if let file = try context.fetch(fileFetchRequest).first {
+                        self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(count))"
+                    }
                 }
             } catch {
-                self.errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
+                errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
             }
+        }
+    }
+    
+    func fetchNextPage() {
+        guard let fetchRequest = currentFetch else { return }
+        let context = dataController.container.viewContext
+        
+        do {
+            fetchRequest.fetchOffset = items.count
+            let items = try context.fetch(fetchRequest)
+            self.items.append(contentsOf: items)
+        } catch {
+            errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
         }
     }
 }
 
 private extension RootViewModel {
     func reset() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            header = ""
-            items = []
-            errorMessage = nil
-        }
+        header = ""
+        items = []
+        errorMessage = nil
     }
     
     func scan(headerString: String) -> [String: String] {
@@ -221,6 +252,7 @@ class MockRootViewModel: RootViewModelProtocol {
     
     func readFile(url: URL) async { }
     func fetchGrids(file: String) { }
+    func fetchNextPage() { }
 }
 
 extension PrecipitationItem {
