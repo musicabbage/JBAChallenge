@@ -89,20 +89,25 @@ class RootViewModel: RootViewModelProtocol {
     }
     
     func fetchGrids(file: String) {
-        do {
+        reset()
+        Task { [weak self] in
+            guard let self else { return }
             let context = dataController.container.viewContext
             
-            let fetchRequest = PrecipitationItem.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
-            fetchRequest.fetchLimit = 12
-            
-            items = try context.fetch(fetchRequest)
-            if let file = items.first?.origin {
-                header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
+            do {
+                try await context.perform {
+                    let fetchRequest = PrecipitationItem.fetchRequest()
+                    fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
+                    fetchRequest.fetchLimit = 12
+                    self.items = try context.fetch(fetchRequest)
+                    if let file = self.items.first?.origin {
+                        self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
+                    }
+                    self.currentFetch = fetchRequest
+                }
+            } catch {
+                errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
             }
-            currentFetch = fetchRequest
-        } catch {
-            errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
         }
     }
     
