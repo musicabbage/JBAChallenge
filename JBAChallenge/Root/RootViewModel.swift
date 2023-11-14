@@ -100,10 +100,21 @@ class RootViewModel: RootViewModelProtocol {
                     fetchRequest.predicate = NSPredicate(format: "fileName == %@", file)
                     fetchRequest.fetchLimit = 12
                     self.items = try context.fetch(fetchRequest)
-                    if let file = self.items.first?.origin {
-                        self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(self.items.count))"
-                    }
+                    
                     self.currentFetch = fetchRequest
+                    
+                    //count
+                    let countFetchRequest = PrecipitationItem.fetchRequest()
+                    countFetchRequest.predicate = fetchRequest.predicate
+                    let count = try context.count(for: countFetchRequest)
+                    
+                    //header
+                    let fileFetchRequest = FileItem.fetchRequest()
+                    fileFetchRequest.predicate = NSPredicate(format: "name == %@", file)
+                   
+                    if let file = try context.fetch(fileFetchRequest).first {
+                        self.header = "Years: \(file.fromYear)-\(file.toYear) (count: \(count))"
+                    }
                 }
             } catch {
                 errorMessage = "Fetch data failed.\n\(error.localizedDescription)"
