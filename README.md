@@ -1,10 +1,12 @@
 # JBAChallenge
 
 ### v1.2 Release notes:
-1. Made the transaction dictionary to be thread-safe.
-2. Memory usage optimisation.
+1. Fix the missing data of the last grid.
+2. Made the transaction dictionary to be thread-safe.
+3. Memory usage optimisation.
     - Used `NSBatchDeleteRequest/NSBatchInsertRequest` instead of insert/delete entity items individually.
     - Added pagination when fetching grid data.
+4. Added `MainActor` wrapper to the viewmodel to keep data being updated from main thread.
 
 ---
 
